@@ -1,0 +1,48 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes fu {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pl {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes mic {
+  0% { box-shadow: 0 0 0 0 rgba(220, 50, 50, 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(220, 50, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 50, 50, 0); }
+}
+
+.fu { animation: fu 0.3s ease both; }
+.pl { animation: pl 1.5s ease-in-out infinite; }
+.mic-pulse { animation: mic 1.2s infinite; }
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #CBD2D9; border-radius: 3px; }
+
+/* PWA safe area insets */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .app-container {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
