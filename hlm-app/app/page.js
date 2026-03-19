@@ -1,6 +1,6 @@
 "use client";
-import LifecycleApp from "./LifecycleApp";
+import PulseApp from "./PulseApp";
 
 export default function Home() {
-  return <LifecycleApp />;
+  return <PulseApp />;
 }
