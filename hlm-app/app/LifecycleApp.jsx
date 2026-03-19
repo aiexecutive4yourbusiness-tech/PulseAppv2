@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { dbLoad, dbSave, subscribeToKey } from "./lib/supabase";
 
 /* ═══════════════════════════════════════════════════════════════════
    HOUSEHOLD LIFECYCLE MANAGER v4 — VOICE + AI ASSISTANT
@@ -479,6 +480,17 @@ export default function App() {
   const[thK,setThKRaw]=useState(()=>ld("theme","teal"));
   const[dark,setDkRaw]=useState(()=>ld("dark",false));
   const[cc,setCCRaw]=useState(()=>ld("cc",""));
+  const dbReady=useRef(false);
+  useEffect(()=>{
+    Promise.all([dbLoad("items",[]),dbLoad("contacts",[]),dbLoad("family",[])]).then(([it,ct,fm])=>{
+      setItems(it);setCts(ct);setFamRaw(fm);
+      setTimeout(()=>{dbReady.current=true;},100);
+    });
+    const s1=subscribeToKey("items",v=>{setItems(v);sv("items",v)});
+    const s2=subscribeToKey("contacts",v=>{setCts(v);sv("contacts",v)});
+    const s3=subscribeToKey("family",v=>{setFamRaw(v);sv("family",v)});
+    return()=>{s1.unsubscribe();s2.unsubscribe();s3.unsubscribe()};
+  },[]);
   const[view,setView]=useState("dashboard");
   const[filter,setFilter]=useState("all");
   const[eid,setEid]=useState(null);
@@ -490,8 +502,9 @@ export default function App() {
   const[syncSt,setSyncSt]=useState(null);
 
   const setThK=v=>{setThKRaw(v);sv("theme",v)};const setDk=v=>{setDkRaw(v);sv("dark",v)};const setCC=v=>{setCCRaw(v);sv("cc",v)};
-  const setFam=v=>{const nv=typeof v==="function"?v(family):v;setFamRaw(nv);sv("family",nv)};
-  useEffect(()=>sv("items",items),[items]);useEffect(()=>sv("contacts",contacts),[contacts]);
+  const setFam=v=>{const nv=typeof v==="function"?v(family):v;setFamRaw(nv);sv("family",nv);if(dbReady.current)dbSave("family",nv)};
+  useEffect(()=>{sv("items",items);if(dbReady.current)dbSave("items",items)},[items]);
+  useEffect(()=>{sv("contacts",contacts);if(dbReady.current)dbSave("contacts",contacts)},[contacts]);
 
   const base=THEMES[thK]||THEMES.teal;
   const t=useMemo(()=>{let th={...base};if(cc){th.pr=cc;th.hg=`linear-gradient(135deg,${cc} 0%,${th.se} 100%)`}if(dark)th={...th,...DK};return th},[thK,dark,cc]);
