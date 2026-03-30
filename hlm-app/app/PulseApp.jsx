@@ -42,6 +42,41 @@ const dU = ds => {
 const ld = (k, d) => { try { const v = localStorage.getItem("pulse5_" + k); return v ? JSON.parse(v) : d; } catch { return d; } };
 const sv = (k, v) => { try { localStorage.setItem("pulse5_" + k, JSON.stringify(v)); } catch {} };
 
+// ─── Sample seed data (shown on first launch) ──────────────────────
+const SAMPLE_FAMILY = [
+  { id: 9001, name: "Alex" },
+  { id: 9002, name: "Jordan" },
+  { id: 9003, name: "Sam" },
+];
+
+function getSampleItems() {
+  const d = n => { const dt = new Date(today); dt.setDate(dt.getDate() + n); return toISO(dt); };
+  return [
+    // ── 10 Activities ────────────────────────────────────────────
+    { id: 1001, title: "Morning Briefing",       category: "home",      date: d(0), time: "06:00", timeEnd: "08:45", notes: "Reviewing quarterly targets",  assignedTo: 9001, taskStatus: "todo" },
+    { id: 1002, title: "Client Call",            category: "contracts", date: d(0), time: "09:30", timeEnd: "10:30", notes: "",                             assignedTo: 9001, taskStatus: "todo" },
+    { id: 1003, title: "Project Sync",           category: "home",      date: d(0), time: "11:00", timeEnd: "12:00", notes: "",                             assignedTo: 9002, taskStatus: "todo" },
+    { id: 1004, title: "Private Lunch",          category: "other",     date: d(0), time: "12:30", timeEnd: "13:30", notes: "The Grand Fork, SoHo",         assignedTo: 9001, taskStatus: "todo" },
+    { id: 1005, title: "Team Review",            category: "home",      date: d(0), time: "14:00", timeEnd: "15:00", notes: "",                             assignedTo: 9002, taskStatus: "todo" },
+    { id: 1006, title: "Family Dinner Prep",     category: "home",      date: d(0), time: "16:00", timeEnd: "17:00", notes: "",                             assignedTo: 9003, taskStatus: "todo" },
+    { id: 1007, title: "Team Meeting",           category: "home",      date: d(1), time: "10:00", timeEnd: "11:00", notes: "Sprint planning",               assignedTo: 9002, taskStatus: "todo" },
+    { id: 1008, title: "Gym Session",            category: "other",     date: d(2), time: "07:30", timeEnd: "09:00", notes: "",                             assignedTo: 9001, taskStatus: "todo" },
+    { id: 1009, title: "Piano Lesson (Ella)",    category: "kids",      date: d(3), time: "14:00", timeEnd: "15:00", notes: "",                             assignedTo: 9003, taskStatus: "todo" },
+    { id: 1010, title: "Doctor Appointment",     category: "medical",   date: d(5), time: "16:00", timeEnd: "17:00", notes: "Annual check-up",               assignedTo: 9002, taskStatus: "todo" },
+    // ── 10 Tasks (distributed across kanban columns) ─────────────
+    { id: 2001, title: "Grocery Shopping",       category: "finances",      date: d(1),  assignedTo: 9001, taskStatus: "todo"     },
+    { id: 2002, title: "Pay Bills",              category: "finances",      date: d(2),  assignedTo: 9002, taskStatus: "todo"     },
+    { id: 2003, title: "Call Plumber",           category: "home",          date: d(3),  assignedTo: 9001, taskStatus: "todo"     },
+    { id: 2004, title: "Buy Gift — Maya",        category: "birthdays",     date: d(4),  assignedTo: 9003, taskStatus: "todo"     },
+    { id: 2005, title: "Car Service Booking",    category: "vehicle",       date: d(6),  assignedTo: 9001, taskStatus: "todo"     },
+    { id: 2006, title: "Vacation Plans",         category: "other",         date: d(14), assignedTo: 9001, taskStatus: "discuss"  },
+    { id: 2007, title: "School Event Budget",    category: "kids",          date: d(10), assignedTo: 9002, taskStatus: "discuss"  },
+    { id: 2008, title: "Kitchen Renovation",     category: "home",          date: d(21), assignedTo: 9003, taskStatus: "discuss"  },
+    { id: 2009, title: "Garden Cleanup",         category: "home",          date: d(5),  assignedTo: 9003, taskStatus: "assigned" },
+    { id: 2010, title: "Pet Grooming Appt",      category: "other",         date: d(7),  assignedTo: 9002, taskStatus: "assigned" },
+  ];
+}
+
 // ─── Categories ───────────────────────────────────────────────────
 const CATS = {
   insurance:     { l: "Insurance",     i: "🛡️", c: "#20918F" },
@@ -1362,16 +1397,18 @@ function TasksScreen({ items, family, currentUser }) {
    MAIN APP
    ═══════════════════════════════════════════════════════════════════ */
 export default function App() {
-  const [items,       setItems]   = useState(() => ld("items", []));
+  const [items,       setItems]   = useState(() => { const s = ld("items",  []); return s.length > 0 ? s : getSampleItems(); });
   const [contacts,    setCts]     = useState(() => ld("contacts", []));
-  const [family,      setFamRaw]  = useState(() => ld("family", []));
+  const [family,      setFamRaw]  = useState(() => { const s = ld("family", []); return s.length > 0 ? s : SAMPLE_FAMILY; });
   const [currentUser, setCURaw]   = useState(() => ld("currentUser", ""));
   const [syncSt,      setSyncSt]  = useState(null);
   const dbReady = useRef(false);
 
   useEffect(() => {
     Promise.all([dbLoad("items", []), dbLoad("contacts", []), dbLoad("family", [])]).then(([it, ct, fm]) => {
-      setItems(it); setCts(ct); setFamRaw(fm);
+      if (it.length  > 0) setItems(it);
+      setCts(ct);
+      if (fm.length  > 0) setFamRaw(fm);
       setTimeout(() => { dbReady.current = true; }, 100);
     });
     const s1 = subscribeToKey("items",    v => { setItems(v);  sv("items", v); });
