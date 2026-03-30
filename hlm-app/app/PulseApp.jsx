@@ -32,7 +32,7 @@ const today    = new Date();
 const todayISO = today.toISOString().split("T")[0];
 const toISO    = d => d.toISOString().split("T")[0];
 const MO  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const DH  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DH  = ["S","M","T","W","T","F","S"];
 
 const dU = ds => {
   const t2 = new Date(ds + "T00:00:00"), n = new Date(today.toDateString());
@@ -762,6 +762,54 @@ function SetModal({ onClose, family, setFamily, onSync, syncSt, currentUser, set
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   SHARED: SCHEDULE ROW (Home + Calendar)
+   ═══════════════════════════════════════════════════════════════════ */
+function ScheduleRow({ item, family = [] }) {
+  const cat    = CATS[item.category] || CATS.other;
+  const asgn   = item.assignedTo ? family.find(f => f.id === item.assignedTo) : null;
+  const colors = [T.pink, T.purple, T.teal];
+  const avColor = colors[Math.abs((item.title || "").charCodeAt(0)) % colors.length];
+  return (
+    <div className="fu" style={{
+      display: "flex", alignItems: "center",
+      marginBottom: "8px",
+      background: "rgba(255,255,255,0.05)",
+      backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: "14px", overflow: "hidden",
+    }}>
+      <div style={{ width: "3px", alignSelf: "stretch", background: T.teal, borderRadius: "3px 0 0 3px", flexShrink: 0 }} />
+      <div style={{ padding: "13px 10px", minWidth: "62px", flexShrink: 0, textAlign: "right" }}>
+        {item.time ? (
+          <>
+            <div style={{ fontSize: "12px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.2 }}>{item.time}</div>
+            <div style={{ fontSize: "10px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>{item.timeEnd ? `- ${item.timeEnd}` : ""}</div>
+          </>
+        ) : (
+          <div style={{ fontSize: "10px", fontWeight: 600, color: T.muted, fontFamily: "'Manrope', sans-serif", lineHeight: 1.4, paddingTop: "4px" }}>All<br/>Day</div>
+        )}
+      </div>
+      <div style={{ flex: 1, padding: "13px 8px 13px 4px" }}>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: "2px" }}>{item.title}</div>
+        {item.notes && <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.notes}</div>}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingRight: "14px", flexShrink: 0 }}>
+        <div style={{
+          width: "28px", height: "28px", borderRadius: "50%",
+          background: avColor, border: "1.5px solid rgba(255,255,255,0.2)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "11px", fontWeight: 700, color: "#fff",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+        }}>
+          {asgn ? asgn.name.charAt(0).toUpperCase() : cat.i}
+        </div>
+        <div style={{ fontSize: "14px", opacity: 0.7 }}>{cat.i}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    SCREEN 1: HOME — DASHBOARD
    ═══════════════════════════════════════════════════════════════════ */
 function HomeScreen({ items, family }) {
@@ -772,71 +820,8 @@ function HomeScreen({ items, family }) {
 
   const dateStr = today.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  // Icon mapping per category type
-  const catIcon = (cat) => {
-    if (!cat) return null;
-    const icons = { insurance:"🛡️", medical:"🏥", finances:"💳", ids:"🪪", contracts:"📝", kids:"🎒", birthdays:"🎂", home:"🏠", tax:"📊", subscriptions:"📱", vehicle:"🚗", other:"📌" };
-    return icons[cat] || "📌";
-  };
-
-  // Schedule row with colored left border + time + avatar + icon (Stitch style)
-  const ScheduleRow = ({ item }) => {
-    const cat  = CATS[item.category] || CATS.other;
-    const asgn = item.assignedTo ? family.find(f => f.id === item.assignedTo) : null;
-    const colors = [T.pink, T.purple, T.teal];
-    const avColor = colors[Math.abs((item.title||"").charCodeAt(0)) % colors.length];
-    // Border color: teal for first priority, pink for others
-    const borderColor = T.teal;
-    return (
-      <div className="fu" style={{
-        display: "flex", alignItems: "center", gap: "0",
-        marginBottom: "8px",
-        background: "rgba(255,255,255,0.05)",
-        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-        border: `1px solid rgba(255,255,255,0.08)`,
-        borderRadius: "14px", overflow: "hidden",
-      }}>
-        {/* Colored left border accent */}
-        <div style={{ width: "3px", alignSelf: "stretch", background: borderColor, borderRadius: "3px 0 0 3px", flexShrink: 0 }} />
-        {/* Time */}
-        <div style={{ padding: "14px 10px", minWidth: "62px", flexShrink: 0, textAlign: "right" }}>
-          {item.time ? (
-            <>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.2 }}>{item.time}</div>
-              <div style={{ fontSize: "10px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>
-                {item.timeEnd ? `- ${item.timeEnd}` : ""}
-              </div>
-            </>
-          ) : (
-            <div style={{ fontSize: "10px", fontWeight: 600, color: T.muted, fontFamily: "'Manrope', sans-serif", lineHeight: 1.4, paddingTop: "4px" }}>All<br/>Day</div>
-          )}
-        </div>
-        {/* Details */}
-        <div style={{ flex: 1, padding: "14px 8px 14px 4px" }}>
-          <div style={{ fontSize: "14px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: "2px" }}>{item.title}</div>
-          {item.notes && <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.notes}</div>}
-        </div>
-        {/* Avatar chip */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingRight: "14px", flexShrink: 0 }}>
-          <div style={{
-            width: "28px", height: "28px", borderRadius: "50%",
-            background: avColor, border: "1.5px solid rgba(255,255,255,0.2)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "11px", fontWeight: 700, color: "#fff",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-          }}>
-            {asgn ? asgn.name.charAt(0).toUpperCase() : cat.i}
-          </div>
-          {/* Category icon */}
-          <div style={{ fontSize: "14px", opacity: 0.7 }}>{catIcon(item.category)}</div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div style={{ padding: "0 16px 140px" }}>
-      {/* Spacer for fixed top bar */}
       <div style={{ height: "68px" }} />
 
       {/* Header card — Today date + weather + Day/Week toggle */}
@@ -854,7 +839,7 @@ function HomeScreen({ items, family }) {
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "22px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1 }}>—°C</div>
-            <div style={{ fontSize: "20px", marginTop: "2px" }}>🌤️</div>
+            <div style={{ fontSize: "22px", marginTop: "2px" }}>☀️</div>
           </div>
         </div>
         {/* Day / Week pill toggle + Full View */}
@@ -895,7 +880,7 @@ function HomeScreen({ items, family }) {
             <p style={{ color: T.muted, fontSize: "13px", fontFamily: "'Manrope', sans-serif" }}>No events today — enjoy your day! ✨</p>
           </div>
         : <div style={{ marginBottom: "24px" }}>
-            {todayItems.map(item => <ScheduleRow key={item.id} item={item} />)}
+            {todayItems.map(item => <ScheduleRow key={item.id} item={item} family={family} />)}
           </div>
       }
 
@@ -903,7 +888,7 @@ function HomeScreen({ items, family }) {
       {upcoming.length > 0 && dayTab === "week" && (
         <div style={{ marginBottom: "24px" }}>
           <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "12px" }}>Coming This Week</h2>
-          {upcoming.slice(0,5).map(item => <ScheduleRow key={item.id} item={item} />)}
+          {upcoming.slice(0,5).map(item => <ScheduleRow key={item.id} item={item} family={family} />)}
         </div>
       )}
 
@@ -913,7 +898,7 @@ function HomeScreen({ items, family }) {
           <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "12px" }}>Top Focus</h2>
           <div style={{ display: "flex", gap: "10px" }}>
             {topFocus.map((item, idx) => {
-              const bg = idx === 0 ? T.gradient : "linear-gradient(135deg,rgba(111,66,193,0.6) 0%,rgba(75,45,140,0.6) 100%)";
+              const bg   = idx === 0 ? T.gradient : "linear-gradient(135deg,rgba(111,66,193,0.6) 0%,rgba(75,45,140,0.6) 100%)";
               const days = dU(item.date);
               return (
                 <div key={item.id} style={{
@@ -941,8 +926,8 @@ function HomeScreen({ items, family }) {
    SCREEN 2: HOUSEHOLD VAULT
    ═══════════════════════════════════════════════════════════════════ */
 function VaultScreen({ items }) {
-  const [search, setSearch]           = useState("");
-  const [activeFolder, setFolder]     = useState(null);
+  const [search, setSearch]       = useState("");
+  const [activeFolder, setFolder] = useState(null);
 
   const folderItems = useMemo(() => {
     const map = {};
@@ -957,16 +942,14 @@ function VaultScreen({ items }) {
   }, [items, search]);
 
   const activeFolderDef = VAULT_FOLDERS.find(f => f.key === activeFolder);
+  const recentItems = useMemo(() => [...items].slice(-6).reverse(), [items]);
 
   return (
     <div style={{ padding: "0 16px 140px" }}>
-      <div style={{ padding: "52px 0 20px" }}>
-        <H1>Household Vault</H1>
-        <p style={{ fontSize: "12px", color: T.muted, marginTop: "4px", fontFamily: "'Manrope', sans-serif" }}>Your family's documents & records</p>
-      </div>
+      <div style={{ height: "68px" }} />
 
       {/* Search bar */}
-      <div style={{ position: "relative", marginBottom: "24px" }}>
+      <div style={{ position: "relative", marginBottom: "20px" }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search Household..."
@@ -981,7 +964,7 @@ function VaultScreen({ items }) {
       {/* Search results */}
       {search.trim() ? (
         searchResults.length === 0
-          ? <div style={{ textAlign: "center", padding: "28px", color: T.muted, fontFamily: "'Manrope', sans-serif", fontSize: "13px" }}>No results found for "{search}"</div>
+          ? <div style={{ textAlign: "center", padding: "28px", color: T.muted, fontFamily: "'Manrope', sans-serif", fontSize: "13px" }}>No results for "{search}"</div>
           : searchResults.map(item => {
               const cat  = CATS[item.category] || CATS.other;
               const days = dU(item.date);
@@ -1000,6 +983,42 @@ function VaultScreen({ items }) {
             })
       ) : (
         <>
+          {/* Recently Viewed — horizontal scroll */}
+          {recentItems.length > 0 && (
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em" }}>Recently Viewed</span>
+                <span style={{ fontSize: "18px", color: T.muted, lineHeight: 1 }}>›</span>
+              </div>
+              <div className="no-scroll" style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "4px" }}>
+                {recentItems.map(item => {
+                  const cat = CATS[item.category] || CATS.other;
+                  return (
+                    <div key={item.id} style={{ flexShrink: 0, width: "78px" }}>
+                      <div style={{
+                        width: "78px", height: "96px", borderRadius: "10px",
+                        background: "rgba(255,255,255,0.07)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center", gap: "6px",
+                        position: "relative", overflow: "hidden",
+                      }}>
+                        {/* Document lines decoration */}
+                        <div style={{ position: "absolute", bottom: "12px", left: "10px", right: "10px", display: "flex", flexDirection: "column", gap: "3px" }}>
+                          {[1,0.6,0.4].map((o, i) => <div key={i} style={{ height: "2px", background: `rgba(255,255,255,${o * 0.15})`, borderRadius: "1px" }} />)}
+                        </div>
+                        <div style={{ fontSize: "26px" }}>{cat.i}</div>
+                      </div>
+                      <div style={{ fontSize: "9px", color: T.muted, marginTop: "5px", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "'Manrope', sans-serif", lineHeight: 1.3 }}>
+                        {item.title}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* 2×2 Folder grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
             {VAULT_FOLDERS.map(folder => {
@@ -1009,21 +1028,31 @@ function VaultScreen({ items }) {
                 <div key={folder.key}
                   onClick={() => setFolder(isActive ? null : folder.key)}
                   style={{
-                    position: "relative", padding: "20px 16px",
+                    position: "relative", padding: "20px 16px 16px",
                     borderRadius: "20px", cursor: "pointer", overflow: "hidden",
                     background: isActive
                       ? `linear-gradient(145deg,${folder.color}55,${folder.color}22)`
-                      : T.card,
+                      : "rgba(255,255,255,0.06)",
                     border: `1px solid ${isActive ? folder.color + "70" : T.border}`,
                     backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
                     transition: "all 0.22s",
                     boxShadow: isActive ? `0 8px 32px ${folder.color}25` : "none",
+                    minHeight: "120px",
                   }}>
-                  {/* Metallic sheen */}
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "45%", background: "linear-gradient(to bottom,rgba(255,255,255,0.07),transparent)", borderRadius: "20px 20px 0 0", pointerEvents: "none" }} />
-                  <div style={{ fontSize: "30px", marginBottom: "10px" }}>{folder.icon}</div>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: "4px" }}>{folder.label}</div>
-                  <div style={{ fontSize: "11px", color: isActive ? "rgba(255,255,255,0.65)" : T.muted, fontFamily: "'Manrope', sans-serif" }}>{count} {count === 1 ? "item" : "items"}</div>
+                  {/* Metallic top sheen */}
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(to bottom,rgba(255,255,255,0.07),transparent)", borderRadius: "20px 20px 0 0", pointerEvents: "none" }} />
+                  {/* Count badge top-right */}
+                  {count > 0 && (
+                    <div style={{
+                      position: "absolute", top: "10px", right: "10px",
+                      background: "rgba(255,255,255,0.14)", backdropFilter: "blur(8px)",
+                      borderRadius: "10px", padding: "2px 8px",
+                      fontSize: "11px", fontWeight: 700, color: T.text,
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    }}>{count}</div>
+                  )}
+                  <div style={{ fontSize: "32px", marginBottom: "10px" }}>{folder.icon}</div>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{folder.label}</div>
                 </div>
               );
             })}
@@ -1058,29 +1087,6 @@ function VaultScreen({ items }) {
             </div>
           )}
 
-          {/* Recents (no active folder) */}
-          {!activeFolder && items.length > 0 && (
-            <div>
-              <SectionLabel>Recent Items</SectionLabel>
-              {items.sort((a, b) => dU(a.date) - dU(b.date)).slice(0, 8).map(item => {
-                const cat  = CATS[item.category] || CATS.other;
-                const days = dU(item.date);
-                return (
-                  <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", marginBottom: "8px", ...glass({ borderRadius: "12px" }) }}>
-                    <div style={{ fontSize: "18px" }}>{cat.i}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{item.title}</div>
-                      <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>{cat.l} · {item.date}</div>
-                    </div>
-                    <div style={{ fontSize: "11px", fontWeight: 700, color: days < 0 ? T.pink : days <= 7 ? "#F59E0B" : T.muted }}>
-                      {days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? "Today" : days <= 30 ? `${days}d` : ""}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
           {items.length === 0 && <Em text="No documents yet. Tap + to add your first item." />}
         </>
       )}
@@ -1091,7 +1097,7 @@ function VaultScreen({ items }) {
 /* ═══════════════════════════════════════════════════════════════════
    SCREEN 3: FAMILY CALENDAR
    ═══════════════════════════════════════════════════════════════════ */
-function CalendarScreen({ items }) {
+function CalendarScreen({ items, family }) {
   const [cM, setCM]       = useState(today.getMonth());
   const [cY, setCY]       = useState(today.getFullYear());
   const [selDay, setSel]  = useState(null);
@@ -1102,7 +1108,7 @@ function CalendarScreen({ items }) {
 
   const firstDay = new Date(cY, cM, 1);
   const lastDate = new Date(cY, cM + 1, 0).getDate();
-  let   startDay = firstDay.getDay() - 1; if (startDay < 0) startDay = 6;
+  let   startDay = firstDay.getDay(); // 0 = Sunday
   const cells    = []; for (let i = 0; i < startDay; i++) cells.push(null); for (let d = 1; d <= lastDate; d++) cells.push(d);
 
   const dayMap = {};
@@ -1115,40 +1121,71 @@ function CalendarScreen({ items }) {
     }
   });
 
-  const todayDay     = today.getMonth() === cM && today.getFullYear() === cY ? today.getDate() : null;
-  const monthEvents  = useMemo(() => items.filter(i => { const d = new Date(i.date + "T00:00:00"); return d.getMonth() === cM && d.getFullYear() === cY; }).sort((a, b) => new Date(a.date) - new Date(b.date)), [items, cM, cY]);
-  const selItems     = selDay ? dayMap[selDay] || [] : [];
+  const todayDay    = today.getMonth() === cM && today.getFullYear() === cY ? today.getDate() : null;
+  const monthEvents = useMemo(() => items.filter(i => { const d = new Date(i.date + "T00:00:00"); return d.getMonth() === cM && d.getFullYear() === cY; }).sort((a, b) => new Date(a.date) - new Date(b.date)), [items, cM, cY]);
+  const selItems    = selDay ? dayMap[selDay] || [] : [];
 
-  // Daily filtered view (Screen 6)
+  // Shared calendar grid (used in both monthly + daily views)
+  const calGrid = (
+    <div style={{ ...glass({ padding: "16px", marginBottom: "20px", borderRadius: "20px" }) }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+        <button onClick={prev} style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(255,255,255,0.08)", border: `1px solid ${T.border}`, color: T.text, fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
+        <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "16px", fontWeight: 700, color: T.text, letterSpacing: "0.04em" }}>{MO[cM].toUpperCase()} {cY}</span>
+        <button onClick={next} style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(255,255,255,0.08)", border: `1px solid ${T.border}`, color: T.text, fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>
+      </div>
+      {/* Day headers: S M T W T F S */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "2px", marginBottom: "4px" }}>
+        {DH.map((d, i) => <div key={i} style={{ textAlign: "center", fontSize: "11px", fontWeight: 700, color: T.muted, padding: "4px 0", fontFamily: "'Manrope', sans-serif" }}>{d}</div>)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "3px" }}>
+        {cells.map((day, i) => {
+          if (!day) return <div key={`e${i}`} />;
+          const evts = dayMap[day] || [];
+          const isT  = day === todayDay;
+          const isS  = day === selDay;
+          return (
+            <div key={day}
+              onClick={() => { setSel(day === selDay ? null : day); setDaily(true); }}
+              style={{
+                borderRadius: "10px", padding: "5px 2px", minHeight: "42px", cursor: "pointer",
+                background: isS ? T.gradient : isT ? "rgba(214,51,132,0.15)" : "transparent",
+                border: isT && !isS ? `1px solid ${T.pink}` : "1px solid transparent",
+                transition: "all 0.15s",
+              }}>
+              <div style={{ fontSize: "12px", fontWeight: isT || isS ? 700 : 400, color: isS ? "#fff" : isT ? T.pink : T.text, textAlign: "center", fontFamily: "'Manrope', sans-serif" }}>{day}</div>
+              {evts.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "center", gap: "2px", marginTop: "3px", flexWrap: "wrap" }}>
+                  {evts.slice(0, 3).map((ev, j) => (
+                    <div key={j} style={{ width: "4px", height: "4px", borderRadius: "50%", background: isS ? "rgba(255,255,255,0.85)" : (CATS[ev.category]?.c || T.pink) }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Daily view
   if (daily && selDay) {
-    const selDate    = new Date(cY, cM, selDay);
-    const selDateStr = selDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     return (
       <div style={{ padding: "0 16px 140px" }}>
-        <div style={{ padding: "52px 0 16px", display: "flex", alignItems: "center", gap: "12px" }}>
-          <button onClick={() => setDaily(false)} style={{ ...glass({ padding: "8px 14px", borderRadius: "12px", border: "none", cursor: "pointer", color: T.text, fontFamily: "'Manrope', sans-serif", fontSize: "13px", fontWeight: 600 }) }}>← Month</button>
-          <div>
-            <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "20px", fontWeight: 700, color: T.text }}>{selDateStr.split(",")[0]}</h1>
-            <p style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>{selDateStr.split(",").slice(1).join(",").trim()}</p>
-          </div>
-        </div>
+        <div style={{ height: "68px" }} />
+        {/* Back to Month button */}
+        <button onClick={() => setDaily(false)} style={{
+          display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px",
+          ...glass({ padding: "7px 16px 7px 8px", borderRadius: "20px", border: "none", cursor: "pointer" }),
+          color: T.text, fontSize: "13px", fontWeight: 600, fontFamily: "'Manrope', sans-serif",
+        }}>
+          <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(255,255,255,0.13)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", flexShrink: 0 }}>✕</span>
+          Back to Month
+        </button>
+        {calGrid}
+        <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "12px" }}>Daily Agenda View</h2>
         {selItems.length === 0
           ? <Em text="No events on this day." />
-          : selItems.map(item => {
-              const cat = CATS[item.category] || CATS.other;
-              return (
-                <div key={item.id} className="fu" style={{ ...glass({ padding: "16px", marginBottom: "10px", borderRadius: "14px", borderLeft: `3px solid ${cat.c}` }) }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{ fontSize: "24px" }}>{cat.i}</div>
-                    <div>
-                      <div style={{ fontSize: "15px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{item.title}</div>
-                      <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>{cat.l}{item.expense ? ` · ${item.expense}` : ""}{item.recurring ? " · Yearly" : ""}</div>
-                    </div>
-                  </div>
-                  {item.notes && <div style={{ fontSize: "12px", color: T.sub, marginTop: "10px", lineHeight: 1.6, fontFamily: "'Manrope', sans-serif" }}>{item.notes}</div>}
-                </div>
-              );
-            })
+          : selItems.map(item => <ScheduleRow key={item.id} item={item} family={family || []} />)
         }
       </div>
     );
@@ -1156,72 +1193,17 @@ function CalendarScreen({ items }) {
 
   return (
     <div style={{ padding: "0 16px 140px" }}>
-      <div style={{ padding: "52px 0 20px" }}>
-        <H1>Calendar</H1>
-        <p style={{ fontSize: "12px", color: T.muted, marginTop: "4px", fontFamily: "'Manrope', sans-serif" }}>Family schedule</p>
-      </div>
-
-      {/* Month grid */}
-      <div style={{ ...glass({ padding: "16px", marginBottom: "20px", borderRadius: "20px" }) }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-          <button onClick={prev} style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(255,255,255,0.08)", border: `1px solid ${T.border}`, color: T.text, fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
-          <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "18px", fontWeight: 700, color: T.text }}>{MO[cM]} {cY}</span>
-          <button onClick={next} style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(255,255,255,0.08)", border: `1px solid ${T.border}`, color: T.text, fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "2px", marginBottom: "6px" }}>
-          {DH.map(d => <div key={d} style={{ textAlign: "center", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", padding: "4px 0", fontFamily: "'Manrope', sans-serif", letterSpacing: "0.05em" }}>{d}</div>)}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "4px" }}>
-          {cells.map((day, i) => {
-            if (!day) return <div key={`e${i}`} />;
-            const evts  = dayMap[day] || [];
-            const isT   = day === todayDay;
-            const isS   = day === selDay;
-            return (
-              <div key={day}
-                onClick={() => { setSel(day === selDay ? null : day); setDaily(day !== selDay); }}
-                style={{
-                  borderRadius: "10px", padding: "6px 4px", minHeight: "44px", cursor: "pointer",
-                  background: isS ? T.gradient : isT ? "rgba(214,51,132,0.15)" : "transparent",
-                  border: isT && !isS ? `1px solid ${T.pink}` : "1px solid transparent",
-                  transition: "all 0.15s",
-                }}>
-                <div style={{ fontSize: "12px", fontWeight: isT ? 700 : 500, color: isS ? "#fff" : isT ? T.pink : T.text, textAlign: "center", fontFamily: "'Manrope', sans-serif" }}>{day}</div>
-                {evts.length > 0 && (
-                  <div style={{ display: "flex", justifyContent: "center", gap: "2px", marginTop: "4px", flexWrap: "wrap" }}>
-                    {evts.slice(0, 3).map((ev, j) => (
-                      <div key={j} style={{ width: "5px", height: "5px", borderRadius: "50%", background: isS ? "rgba(255,255,255,0.8)" : (CATS[ev.category]?.c || T.pink) }} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Monthly event list (chronological scroll) */}
-      <SectionLabel>{MO[cM]} {cY} — All Events</SectionLabel>
+      <div style={{ height: "68px" }} />
+      {calGrid}
+      <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "12px" }}>Monthly Agenda View</h2>
       {monthEvents.length === 0
         ? <Em text="No events this month." />
-        : monthEvents.map(item => {
-            const cat    = CATS[item.category] || CATS.other;
-            const d      = new Date(item.date + "T00:00:00");
-            const dayNum = d.getDate();
-            return (
-              <div key={item.id} style={{ display: "flex", gap: "12px", marginBottom: "10px", cursor: "pointer" }}
-                onClick={() => { setSel(dayNum); setDaily(true); }}>
-                <div style={{ width: "44px", flexShrink: 0, textAlign: "center", paddingTop: "4px" }}>
-                  <div style={{ fontSize: "18px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1 }}>{dayNum}</div>
-                  <div style={{ fontSize: "9px", color: T.muted, fontFamily: "'Manrope', sans-serif", textTransform: "uppercase" }}>{MO[d.getMonth()]}</div>
-                </div>
-                <div style={{ flex: 1, ...glass({ padding: "12px", borderRadius: "12px", borderLeft: `2px solid ${cat.c}` }) }}>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{cat.i} {item.title}</div>
-                  <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif", marginTop: "2px" }}>{cat.l}{item.expense ? ` · ${item.expense}` : ""}</div>
-                </div>
-              </div>
-            );
-          })
+        : monthEvents.map(item => (
+            <div key={item.id} style={{ cursor: "pointer" }}
+              onClick={() => { setSel(new Date(item.date + "T00:00:00").getDate()); setDaily(true); }}>
+              <ScheduleRow item={item} family={family || []} />
+            </div>
+          ))
       }
     </div>
   );
@@ -1251,84 +1233,100 @@ function TasksScreen({ items, family, currentUser }) {
       : [],
   [items, currentUser]);
 
-  const TaskCard = ({ item }) => {
-    const cat  = CATS[item.category] || CATS.other;
-    const asgn = item.assignedTo ? family.find(f => f.id === item.assignedTo) : null;
-    const days = dU(item.date);
+  // Compact kanban card for 3-column layout
+  const KanbanCard = ({ item, colColor }) => {
+    const cat   = CATS[item.category] || CATS.other;
+    const asgn  = item.assignedTo ? family.find(f => f.id === item.assignedTo) : null;
+    const days  = dU(item.date);
+    const avClr = [T.pink, T.purple, T.teal][Math.abs((item.assignedTo || "").charCodeAt(0)) % 3];
     return (
-      <div className="fu" style={{ ...glass({ padding: "12px", marginBottom: "8px", borderRadius: "12px" }) }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-          <div style={{ fontSize: "16px", flexShrink: 0 }}>{cat.i}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
-            <div style={{ display: "flex", gap: "5px", alignItems: "center", marginTop: "4px", flexWrap: "wrap" }}>
-              {asgn && (
-                <div style={{ background: T.gradient, borderRadius: "50%", width: "18px", height: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>{asgn.name.charAt(0)}</div>
-              )}
-              <span style={{ fontSize: "10px", color: days < 0 ? T.pink : days <= 3 ? "#F59E0B" : T.muted, fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>
-                {days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? "Today" : days === 1 ? "Tmrw" : `${days}d`}
-              </span>
-            </div>
-          </div>
+      <div style={{
+        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.09)",
+        borderRadius: "10px", padding: "10px 9px",
+        marginBottom: "6px",
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginBottom: "7px" }}>
+          <div style={{ fontSize: "13px", flexShrink: 0, lineHeight: 1.3 }}>{cat.i}</div>
+          <div style={{
+            flex: 1, fontSize: "11px", fontWeight: 600, color: T.text,
+            fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.35,
+            overflow: "hidden", display: "-webkit-box",
+            WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+          }}>{item.title}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          {asgn && (
+            <div style={{
+              width: "16px", height: "16px", borderRadius: "50%",
+              background: avClr, fontSize: "8px", fontWeight: 700,
+              color: "#fff", display: "flex", alignItems: "center",
+              justifyContent: "center", flexShrink: 0,
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+            }}>{asgn.name.charAt(0)}</div>
+          )}
+          <span style={{
+            marginLeft: "auto", fontSize: "9px", fontWeight: 600,
+            color: days < 0 ? T.pink : days === 0 ? T.pink : T.muted,
+            fontFamily: "'Manrope', sans-serif",
+          }}>
+            {days < 0 ? `${Math.abs(days)}d` : days === 0 ? "today" : days === 1 ? "tmrw" : `${days}d`}
+          </span>
         </div>
       </div>
     );
   };
 
   return (
-    <div style={{ padding: "0 0 140px" }}>
-      {/* Header */}
-      <div style={{ padding: "52px 16px 20px" }}>
-        <H1>Tasks</H1>
-        <p style={{ fontSize: "12px", color: T.muted, marginTop: "4px", fontFamily: "'Manrope', sans-serif" }}>Family coordination</p>
-      </div>
-
-      {/* Toggle */}
-      <div style={{ display: "flex", margin: "0 16px 20px", background: "rgba(255,255,255,0.05)", borderRadius: "14px", padding: "4px", border: `1px solid ${T.border}` }}>
-        {[{ id: "family", l: "Family Board" }, { id: "mine", l: "My Tasks" }].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            flex: 1, padding: "10px", borderRadius: "10px", border: "none",
-            background: tab === t.id ? T.gradient : "transparent",
-            color: tab === t.id ? "#fff" : T.muted,
-            fontSize: "13px", fontWeight: 700, cursor: "pointer",
-            fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.2s",
-          }}>{t.l}</button>
-        ))}
-      </div>
-
-      {/* Kanban — vertical stacked columns */}
-      {tab === "family" && (
-        <div style={{ padding: "0 16px" }}>
-          {COLS.map(col => (
-            <div key={col.id} style={{ marginBottom: "28px" }}>
-              {/* Column header */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                marginBottom: "10px", padding: "8px 12px",
-                background: `${col.color}18`,
-                borderRadius: "10px",
-                border: `1px solid ${col.color}35`,
-              }}>
-                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col.color, flexShrink: 0, boxShadow: `0 0 6px ${col.color}` }} />
-                <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "12px", fontWeight: 700, color: T.text, letterSpacing: "0.05em" }}>{col.label}</span>
-                <div style={{ marginLeft: "auto", background: col.color, borderRadius: "10px", padding: "1px 8px", fontSize: "11px", fontWeight: 700, color: "#fff" }}>{byStatus[col.id].length}</div>
-              </div>
-              {byStatus[col.id].length === 0
-                ? <div style={{ ...glass({ padding: "14px", textAlign: "center", borderRadius: "12px", border: `1px dashed ${T.border}` }) }}>
-                    <p style={{ fontSize: "12px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>Nothing here yet</p>
-                  </div>
-                : byStatus[col.id].map(item => <TaskCard key={item.id} item={item} />)
-              }
-            </div>
-          ))}
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Header row */}
+      <div style={{ padding: "68px 16px 0", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "14px" }}>
+          <H1>Tasks</H1>
+          {/* My Tasks toggle (compact) */}
+          <div style={{ display: "flex", background: "rgba(255,255,255,0.07)", borderRadius: "20px", padding: "3px", border: `1px solid ${T.border}` }}>
+            {[{ id: "family", l: "Board" }, { id: "mine", l: "Mine" }].map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                padding: "5px 14px", borderRadius: "16px", border: "none",
+                background: tab === t.id ? T.gradient : "transparent",
+                color: tab === t.id ? "#fff" : T.muted,
+                fontSize: "12px", fontWeight: 700, cursor: "pointer",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}>{t.l}</button>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* My Tasks */}
-      {tab === "mine" && (
-        <div style={{ padding: "0 16px" }}>
+      {/* 3-column horizontal kanban */}
+      {tab === "family" ? (
+        <div style={{ flex: 1, overflow: "hidden", padding: "0 12px 140px" }}>
+          <div style={{ display: "flex", gap: "8px", height: "100%" }}>
+            {COLS.map(col => (
+              <div key={col.id} style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+                {/* Column header */}
+                <div style={{ display: "flex", alignItems: "center", gap: "5px", paddingBottom: "10px", flexShrink: 0 }}>
+                  <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: col.color, boxShadow: `0 0 5px ${col.color}55`, flexShrink: 0 }} />
+                  <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "11px", fontWeight: 700, color: T.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{col.label}</span>
+                  <span style={{ fontSize: "10px", color: T.muted, fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>{byStatus[col.id].length}</span>
+                </div>
+                {/* Scrollable task list */}
+                <div className="no-scroll" style={{ flex: 1, overflowY: "auto" }}>
+                  {byStatus[col.id].length === 0 ? (
+                    <div style={{ border: `1px dashed ${T.border}`, borderRadius: "10px", padding: "14px 6px", textAlign: "center" }}>
+                      <p style={{ fontSize: "10px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>Empty</p>
+                    </div>
+                  ) : byStatus[col.id].map(item => <KanbanCard key={item.id} item={item} colColor={col.color} />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* My Tasks — full-width list */
+        <div className="no-scroll" style={{ flex: 1, overflowY: "auto", padding: "4px 16px 140px" }}>
           {!currentUser
-            ? <div style={{ ...glass({ padding: "28px", textAlign: "center", borderRadius: "18px" }) }}>
+            ? <div style={{ ...glass({ padding: "28px", textAlign: "center", borderRadius: "18px", marginTop: "8px" }) }}>
                 <div style={{ fontSize: "36px", marginBottom: "12px" }}>👤</div>
                 <p style={{ color: T.muted, fontSize: "13px", fontFamily: "'Manrope', sans-serif", lineHeight: 1.7 }}>Set your name in ⚙️ Settings to see your personal task list.</p>
               </div>
@@ -1338,9 +1336,7 @@ function TasksScreen({ items, family, currentUser }) {
                   const cat  = CATS[item.category] || CATS.other;
                   const days = dU(item.date);
                   return (
-                    <div key={item.id} className="fu" style={{
-                      ...glass({ padding: "14px", marginBottom: "10px", borderRadius: "14px", borderLeft: `3px solid ${days < 0 ? T.pink : days <= 3 ? "#F59E0B" : T.purple}` }),
-                    }}>
+                    <div key={item.id} className="fu" style={{ ...glass({ padding: "14px", marginBottom: "10px", borderRadius: "14px", borderLeft: `3px solid ${days < 0 ? T.pink : days <= 3 ? "#F59E0B" : T.purple}` }) }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <div style={{ fontSize: "22px" }}>{cat.i}</div>
                         <div style={{ flex: 1 }}>
@@ -1453,54 +1449,54 @@ export default function App() {
       <div style={{ position: "fixed", top: "5%", right: "-20%", width: "55vw", height: "55vw", background: "radial-gradient(circle,rgba(214,51,132,0.08) 0%,transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
       <div style={{ position: "fixed", bottom: "15%", left: "-5%", width: "40vw", height: "40vw", background: "radial-gradient(circle,rgba(78,201,176,0.05) 0%,transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
-      {/* Global top bar: Pulse wordmark + avatar cluster + settings */}
+      {/* Global top bar: avatar cluster + notification bell */}
       <div style={{
         position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: "600px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "14px 18px", zIndex: 120,
-        background: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)",
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, transparent 100%)",
       }}>
-        {/* Pulse wordmark */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: "22px", fontWeight: 800, letterSpacing: "-0.03em",
-            background: T.gradient, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}>Pulse</span>
-          {/* Avatar cluster */}
-          {headerFamily.length > 0 && (
-            <div style={{ display: "flex", marginLeft: "4px" }}>
+        {/* Avatar cluster (overlapping circles) */}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {headerFamily.length > 0 ? (
+            <div style={{ display: "flex" }}>
               {headerFamily.map((m, i) => {
                 const colors = [T.pink, T.purple, T.teal];
                 return (
                   <div key={m.id} style={{
-                    width: "28px", height: "28px", borderRadius: "50%",
+                    width: "32px", height: "32px", borderRadius: "50%",
                     background: colors[i % colors.length],
-                    border: "2px solid rgba(0,0,0,0.6)",
+                    border: "2px solid rgba(0,0,0,0.7)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "11px", fontWeight: 700, color: "#fff",
-                    marginLeft: i > 0 ? "-6px" : 0, zIndex: 3 - i,
+                    fontSize: "12px", fontWeight: 700, color: "#fff",
+                    marginLeft: i > 0 ? "-8px" : 0, zIndex: 3 - i,
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    position: "relative",
                   }}>{m.name.charAt(0).toUpperCase()}</div>
                 );
               })}
             </div>
+          ) : (
+            <span style={{
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: "20px", fontWeight: 800, letterSpacing: "-0.03em",
+              background: T.gradient, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>Pulse</span>
           )}
         </div>
-        {/* Settings gear */}
+        {/* Notification bell (opens settings) */}
         <button onClick={() => setModal("settings")} style={{
           width: "36px", height: "36px", borderRadius: "50%",
-          background: "rgba(255,255,255,0.08)",
+          background: "linear-gradient(135deg, rgba(111,66,193,0.55) 0%, rgba(214,51,132,0.35) 100%)",
           backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-          border: `1px solid ${T.border}`,
+          border: "1px solid rgba(180,120,255,0.3)",
           display: "flex", alignItems: "center", justifyContent: "center",
           cursor: "pointer",
         }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8"/>
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8"/>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
@@ -1509,7 +1505,7 @@ export default function App() {
       <div style={{ position: "relative", zIndex: 1 }}>
         {view === "home"     && <HomeScreen     items={items} family={family} />}
         {view === "vault"    && <VaultScreen    items={items} />}
-        {view === "calendar" && <CalendarScreen items={items} />}
+        {view === "calendar" && <CalendarScreen items={items} family={family} />}
         {view === "tasks"    && <TasksScreen    items={items} family={family} currentUser={currentUser} />}
       </div>
 
