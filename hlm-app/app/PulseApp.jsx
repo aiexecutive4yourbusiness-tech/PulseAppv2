@@ -9,10 +9,10 @@ import { dbLoad, dbSave, subscribeToKey } from "./lib/supabase";
 
 // ─── Theme tokens ─────────────────────────────────────────────────
 const T = {
-  bg:          "#0f0520",
-  card:        "rgba(80,30,120,0.35)",
-  cardHi:      "rgba(100,40,150,0.45)",
-  border:      "rgba(180,120,255,0.18)",
+  bg:          "#000000",
+  card:        "rgba(255,255,255,0.06)",
+  cardHi:      "rgba(255,255,255,0.10)",
+  border:      "rgba(255,255,255,0.10)",
   gradient:    "linear-gradient(135deg,#D63384 0%,#6F42C1 100%)",
   pink:        "#D63384",
   purple:      "#7B4FD4",
@@ -21,9 +21,9 @@ const T = {
   text:        "#FFFFFF",
   sub:         "rgba(255,255,255,0.75)",
   muted:       "rgba(255,255,255,0.40)",
-  nav:         "rgba(15,5,32,0.94)",
-  input:       "rgba(80,30,120,0.30)",
-  inputBorder: "rgba(180,120,255,0.25)",
+  nav:         "rgba(0,0,0,0.85)",
+  input:       "rgba(255,255,255,0.07)",
+  inputBorder: "rgba(255,255,255,0.15)",
   schedBorder: "#4EC9B0",
 };
 
@@ -440,6 +440,14 @@ function EvModal({ onClose, onSave, contacts, family, editItem }) {
         </FL>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+        <FL label="Start Time">
+          <input style={iS()} type="time" value={f.time || ""} onChange={e => set("time", e.target.value)} />
+        </FL>
+        <FL label="End Time">
+          <input style={iS()} type="time" value={f.timeEnd || ""} onChange={e => set("timeEnd", e.target.value)} />
+        </FL>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
         <FL label="Assign to">
           <select style={{ ...iS(), cursor: "pointer" }} value={f.assignedTo} onChange={e => set("assignedTo", e.target.value)}>
             <option value="">— Unassigned —</option>
@@ -783,21 +791,25 @@ function HomeScreen({ items, family }) {
       <div className="fu" style={{
         display: "flex", alignItems: "center", gap: "0",
         marginBottom: "8px",
-        background: "rgba(55,20,90,0.55)",
+        background: "rgba(255,255,255,0.05)",
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-        border: `1px solid rgba(180,120,255,0.14)`,
+        border: `1px solid rgba(255,255,255,0.08)`,
         borderRadius: "14px", overflow: "hidden",
       }}>
         {/* Colored left border accent */}
         <div style={{ width: "3px", alignSelf: "stretch", background: borderColor, borderRadius: "3px 0 0 3px", flexShrink: 0 }} />
         {/* Time */}
         <div style={{ padding: "14px 10px", minWidth: "62px", flexShrink: 0, textAlign: "right" }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.2 }}>
-            {item.date === todayISO ? "08:00" : "--:--"}
-          </div>
-          <div style={{ fontSize: "10px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>
-            - {item.date === todayISO ? "08:45" : "--:--"}
-          </div>
+          {item.time ? (
+            <>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.2 }}>{item.time}</div>
+              <div style={{ fontSize: "10px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>
+                {item.timeEnd ? `- ${item.timeEnd}` : ""}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: "10px", fontWeight: 600, color: T.muted, fontFamily: "'Manrope', sans-serif", lineHeight: 1.4, paddingTop: "4px" }}>All<br/>Day</div>
+          )}
         </div>
         {/* Details */}
         <div style={{ flex: 1, padding: "14px 8px 14px 4px" }}>
@@ -829,11 +841,11 @@ function HomeScreen({ items, family }) {
 
       {/* Header card — Today date + weather + Day/Week toggle */}
       <div style={{
-        ...glass({ padding: "20px 20px 18px", borderRadius: "24px", marginBottom: "24px",
-          boxShadow: "0 8px 40px rgba(111,66,193,0.25)",
-          border: "1px solid rgba(180,120,255,0.22)",
-        }),
-        background: "rgba(45,16,88,0.72)",
+        padding: "20px 20px 18px", borderRadius: "24px", marginBottom: "24px",
+        background: "rgba(255,255,255,0.06)",
+        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "0 8px 40px rgba(214,51,132,0.12), 0 2px 0 rgba(255,255,255,0.05) inset",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
           <div>
@@ -1284,19 +1296,26 @@ function TasksScreen({ items, family, currentUser }) {
         ))}
       </div>
 
-      {/* Kanban */}
+      {/* Kanban — vertical stacked columns */}
       {tab === "family" && (
-        <div className="no-scroll" style={{ display: "flex", gap: "12px", padding: "0 16px", overflowX: "auto", paddingBottom: "8px" }}>
+        <div style={{ padding: "0 16px" }}>
           {COLS.map(col => (
-            <div key={col.id} style={{ minWidth: "230px", flex: "0 0 230px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: col.color, flexShrink: 0 }} />
-                <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "11px", fontWeight: 700, color: T.sub, textTransform: "uppercase", letterSpacing: "0.1em" }}>{col.label}</span>
-                <span style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif", marginLeft: "auto" }}>{byStatus[col.id].length}</span>
+            <div key={col.id} style={{ marginBottom: "28px" }}>
+              {/* Column header */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                marginBottom: "10px", padding: "8px 12px",
+                background: `${col.color}18`,
+                borderRadius: "10px",
+                border: `1px solid ${col.color}35`,
+              }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col.color, flexShrink: 0, boxShadow: `0 0 6px ${col.color}` }} />
+                <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "12px", fontWeight: 700, color: T.text, letterSpacing: "0.05em" }}>{col.label}</span>
+                <div style={{ marginLeft: "auto", background: col.color, borderRadius: "10px", padding: "1px 8px", fontSize: "11px", fontWeight: 700, color: "#fff" }}>{byStatus[col.id].length}</div>
               </div>
               {byStatus[col.id].length === 0
-                ? <div style={{ ...glass({ padding: "16px", textAlign: "center", borderRadius: "12px" }) }}>
-                    <p style={{ fontSize: "12px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>Empty</p>
+                ? <div style={{ ...glass({ padding: "14px", textAlign: "center", borderRadius: "12px", border: `1px dashed ${T.border}` }) }}>
+                    <p style={{ fontSize: "12px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>Nothing here yet</p>
                   </div>
                 : byStatus[col.id].map(item => <TaskCard key={item.id} item={item} />)
               }
@@ -1428,66 +1447,41 @@ export default function App() {
       position: "relative",
     }}>
 
-      {/* Atmospheric background — blurred room photo simulation */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: "linear-gradient(160deg, #2d1057 0%, #1a0838 30%, #0f0520 60%, #08021a 100%)",
-      }} />
-      {/* Ambient glows */}
-      <div style={{ position: "fixed", top: "-10%", left: "-10%", width: "80vw", height: "80vw", background: "radial-gradient(circle,rgba(111,66,193,0.22) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-      <div style={{ position: "fixed", top: "10%", right: "-15%", width: "60vw", height: "60vw", background: "radial-gradient(circle,rgba(214,51,132,0.10) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-      {/* Room photo strip at top */}
-      <div style={{
-        position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
-        width: "100%", maxWidth: "600px", height: "220px", zIndex: 0, pointerEvents: "none",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          width: "100%", height: "100%",
-          background: "linear-gradient(135deg,#3d1a6e 0%,#2a0d52 40%,#1d0a3a 100%)",
-          opacity: 0.7,
-        }} />
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "linear-gradient(to bottom, rgba(15,5,32,0) 30%, rgba(15,5,32,1) 100%)",
-        }} />
-      </div>
+      {/* Pure black base + subtle ambient glows (Obsidian Amethyst) */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "#000000" }} />
+      <div style={{ position: "fixed", top: "-20%", left: "-10%", width: "70vw", height: "70vw", background: "radial-gradient(circle,rgba(111,66,193,0.18) 0%,transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", top: "5%", right: "-20%", width: "55vw", height: "55vw", background: "radial-gradient(circle,rgba(214,51,132,0.08) 0%,transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", bottom: "15%", left: "-5%", width: "40vw", height: "40vw", background: "radial-gradient(circle,rgba(78,201,176,0.05) 0%,transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
-      {/* Global top bar: family avatars left, bell right */}
+      {/* Global top bar: Pulse wordmark + avatar cluster + settings */}
       <div style={{
         position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
         width: "100%", maxWidth: "600px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "14px 18px", zIndex: 120,
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)",
       }}>
-        {/* Avatar cluster */}
-        <div style={{ display: "flex", alignItems: "center" }}>
-          {headerFamily.length === 0 ? (
-            <div style={{ display: "flex", gap: "6px" }}>
-              {[T.pink, T.purple, T.teal].map((c, i) => (
-                <div key={i} style={{
-                  width: "36px", height: "36px", borderRadius: "50%",
-                  background: c, border: "2.5px solid rgba(255,255,255,0.25)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "14px", fontWeight: 700, color: "#fff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                  marginLeft: i > 0 ? "-8px" : 0, zIndex: 3 - i,
-                }}>👤</div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ display: "flex" }}>
+        {/* Pulse wordmark */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: "22px", fontWeight: 800, letterSpacing: "-0.03em",
+            background: T.gradient, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}>Pulse</span>
+          {/* Avatar cluster */}
+          {headerFamily.length > 0 && (
+            <div style={{ display: "flex", marginLeft: "4px" }}>
               {headerFamily.map((m, i) => {
                 const colors = [T.pink, T.purple, T.teal];
                 return (
                   <div key={m.id} style={{
-                    width: "36px", height: "36px", borderRadius: "50%",
+                    width: "28px", height: "28px", borderRadius: "50%",
                     background: colors[i % colors.length],
-                    border: "2.5px solid rgba(255,255,255,0.25)",
+                    border: "2px solid rgba(0,0,0,0.6)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "13px", fontWeight: 700, color: "#fff",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                    marginLeft: i > 0 ? "-8px" : 0, zIndex: 3 - i,
+                    fontSize: "11px", fontWeight: 700, color: "#fff",
+                    marginLeft: i > 0 ? "-6px" : 0, zIndex: 3 - i,
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
                   }}>{m.name.charAt(0).toUpperCase()}</div>
                 );
@@ -1495,21 +1489,20 @@ export default function App() {
             </div>
           )}
         </div>
-        {/* Bell + settings */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button onClick={() => setModal("settings")} style={{
-            width: "36px", height: "36px", borderRadius: "50%",
-            background: "rgba(80,30,120,0.4)",
-            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-            border: `1px solid ${T.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
+        {/* Settings gear */}
+        <button onClick={() => setModal("settings")} style={{
+          width: "36px", height: "36px", borderRadius: "50%",
+          background: "rgba(255,255,255,0.08)",
+          backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+          border: `1px solid ${T.border}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+        }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8"/>
+          </svg>
+        </button>
       </div>
 
       {/* Screen content */}
