@@ -9,19 +9,22 @@ import { dbLoad, dbSave, subscribeToKey } from "./lib/supabase";
 
 // ─── Theme tokens ─────────────────────────────────────────────────
 const T = {
-  bg:          "#000000",
-  card:        "rgba(255,255,255,0.05)",
-  cardHi:      "rgba(255,255,255,0.08)",
-  border:      "rgba(255,255,255,0.09)",
+  bg:          "#0f0520",
+  card:        "rgba(80,30,120,0.35)",
+  cardHi:      "rgba(100,40,150,0.45)",
+  border:      "rgba(180,120,255,0.18)",
   gradient:    "linear-gradient(135deg,#D63384 0%,#6F42C1 100%)",
   pink:        "#D63384",
-  purple:      "#6F42C1",
+  purple:      "#7B4FD4",
+  teal:        "#4EC9B0",
+  amber:       "#F59E0B",
   text:        "#FFFFFF",
-  sub:         "rgba(255,255,255,0.58)",
-  muted:       "rgba(255,255,255,0.32)",
-  nav:         "rgba(13,13,13,0.92)",
-  input:       "rgba(255,255,255,0.06)",
-  inputBorder: "rgba(255,255,255,0.14)",
+  sub:         "rgba(255,255,255,0.75)",
+  muted:       "rgba(255,255,255,0.40)",
+  nav:         "rgba(15,5,32,0.94)",
+  input:       "rgba(80,30,120,0.30)",
+  inputBorder: "rgba(180,120,255,0.25)",
+  schedBorder: "#4EC9B0",
 };
 
 // ─── Data helpers ─────────────────────────────────────────────────
@@ -754,117 +757,162 @@ function SetModal({ onClose, family, setFamily, onSync, syncSt, currentUser, set
    SCREEN 1: HOME — DASHBOARD
    ═══════════════════════════════════════════════════════════════════ */
 function HomeScreen({ items, family }) {
+  const [dayTab, setDayTab] = useState("day");
   const todayItems = useMemo(() => items.filter(i => i.date === todayISO), [items]);
-  const upcoming   = useMemo(() => items.filter(i => { const d = dU(i.date); return d > 0 && d <= 7; }).sort((a, b) => dU(a.date) - dU(b.date)), [items]);
-  const topFocus   = useMemo(() => items.filter(i => dU(i.date) >= 0).sort((a, b) => dU(a.date) - dU(b.date)).slice(0, 2), [items]);
-  const overdue    = useMemo(() => items.filter(i => dU(i.date) < 0), [items]);
+  const upcoming   = useMemo(() => items.filter(i => { const d = dU(i.date); return d > 0 && d <= 7; }).sort((a,b) => dU(a.date)-dU(b.date)), [items]);
+  const topFocus   = useMemo(() => items.filter(i => dU(i.date) >= 0).sort((a,b) => dU(a.date)-dU(b.date)).slice(0,2), [items]);
 
-  const dateStr = today.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const dateStr = today.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  // Icon mapping per category type
+  const catIcon = (cat) => {
+    if (!cat) return null;
+    const icons = { insurance:"🛡️", medical:"🏥", finances:"💳", ids:"🪪", contracts:"📝", kids:"🎒", birthdays:"🎂", home:"🏠", tax:"📊", subscriptions:"📱", vehicle:"🚗", other:"📌" };
+    return icons[cat] || "📌";
+  };
+
+  // Schedule row with colored left border + time + avatar + icon (Stitch style)
+  const ScheduleRow = ({ item }) => {
+    const cat  = CATS[item.category] || CATS.other;
+    const asgn = item.assignedTo ? family.find(f => f.id === item.assignedTo) : null;
+    const colors = [T.pink, T.purple, T.teal];
+    const avColor = colors[Math.abs((item.title||"").charCodeAt(0)) % colors.length];
+    // Border color: teal for first priority, pink for others
+    const borderColor = T.teal;
+    return (
+      <div className="fu" style={{
+        display: "flex", alignItems: "center", gap: "0",
+        marginBottom: "8px",
+        background: "rgba(55,20,90,0.55)",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        border: `1px solid rgba(180,120,255,0.14)`,
+        borderRadius: "14px", overflow: "hidden",
+      }}>
+        {/* Colored left border accent */}
+        <div style={{ width: "3px", alignSelf: "stretch", background: borderColor, borderRadius: "3px 0 0 3px", flexShrink: 0 }} />
+        {/* Time */}
+        <div style={{ padding: "14px 10px", minWidth: "62px", flexShrink: 0, textAlign: "right" }}>
+          <div style={{ fontSize: "12px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.2 }}>
+            {item.date === todayISO ? "08:00" : "--:--"}
+          </div>
+          <div style={{ fontSize: "10px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>
+            - {item.date === todayISO ? "08:45" : "--:--"}
+          </div>
+        </div>
+        {/* Details */}
+        <div style={{ flex: 1, padding: "14px 8px 14px 4px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: "2px" }}>{item.title}</div>
+          {item.notes && <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.notes}</div>}
+        </div>
+        {/* Avatar chip */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingRight: "14px", flexShrink: 0 }}>
+          <div style={{
+            width: "28px", height: "28px", borderRadius: "50%",
+            background: avColor, border: "1.5px solid rgba(255,255,255,0.2)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "11px", fontWeight: 700, color: "#fff",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}>
+            {asgn ? asgn.name.charAt(0).toUpperCase() : cat.i}
+          </div>
+          {/* Category icon */}
+          <div style={{ fontSize: "14px", opacity: 0.7 }}>{catIcon(item.category)}</div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ padding: "0 16px 140px" }}>
-      {/* Header */}
-      <div style={{ padding: "52px 0 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <H1>Today</H1>
-          <p style={{ fontSize: "12px", color: T.muted, marginTop: "4px", fontFamily: "'Manrope', sans-serif" }}>{dateStr}</p>
-        </div>
-        {/* Weather widget */}
-        <div style={{ ...glass({ padding: "10px 14px", textAlign: "center", borderRadius: "14px" }) }}>
-          <div style={{ fontSize: "20px" }}>🌤️</div>
-          <div style={{ fontSize: "12px", color: T.sub, fontFamily: "'Manrope', sans-serif", fontWeight: 600, marginTop: "2px" }}>—°C</div>
-        </div>
-      </div>
+      {/* Spacer for fixed top bar */}
+      <div style={{ height: "68px" }} />
 
-      {/* Stats row */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-        {[
-          { n: overdue.length,  l: "Overdue",   c: T.pink },
-          { n: upcoming.length, l: "This Week",  c: "#F59E0B" },
-          { n: items.length,    l: "Total",      c: T.sub },
-        ].map((s, i) => (
-          <div key={i} style={{ flex: 1, textAlign: "center", padding: "12px 8px", ...glass({ borderRadius: "14px" }) }}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "22px", fontWeight: 700, color: s.c }}>{s.n}</div>
-            <div style={{ fontSize: "9px", color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Manrope', sans-serif", marginTop: "2px" }}>{s.l}</div>
+      {/* Header card — Today date + weather + Day/Week toggle */}
+      <div style={{
+        ...glass({ padding: "20px 20px 18px", borderRadius: "24px", marginBottom: "24px",
+          boxShadow: "0 8px 40px rgba(111,66,193,0.25)",
+          border: "1px solid rgba(180,120,255,0.22)",
+        }),
+        background: "rgba(45,16,88,0.72)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+          <div>
+            <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "38px", fontWeight: 800, color: T.text, lineHeight: 1 }}>Today</h1>
+            <p style={{ fontSize: "13px", color: T.muted, marginTop: "4px", fontFamily: "'Manrope', sans-serif" }}>{dateStr}</p>
           </div>
-        ))}
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "22px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1 }}>—°C</div>
+            <div style={{ fontSize: "20px", marginTop: "2px" }}>🌤️</div>
+          </div>
+        </div>
+        {/* Day / Week pill toggle + Full View */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.07)", borderRadius: "22px", padding: "3px" }}>
+            <button onClick={() => setDayTab("day")} style={{
+              padding: "6px 18px", borderRadius: "18px", border: "none", cursor: "pointer",
+              background: dayTab === "day" ? T.gradient : "transparent",
+              color: dayTab === "day" ? "#fff" : T.muted,
+              fontSize: "13px", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif",
+            }}>Day</button>
+            <span style={{ color: T.muted, fontSize: "13px", padding: "0 2px" }}>/</span>
+            <button onClick={() => setDayTab("week")} style={{
+              padding: "6px 18px", borderRadius: "18px", border: "none", cursor: "pointer",
+              background: dayTab === "week" ? T.gradient : "transparent",
+              color: dayTab === "week" ? "#fff" : T.muted,
+              fontSize: "13px", fontWeight: 600, fontFamily: "'Plus Jakarta Sans', sans-serif",
+            }}>Week</button>
+          </div>
+          <button style={{
+            padding: "6px 14px", borderRadius: "14px",
+            background: "rgba(255,255,255,0.08)",
+            border: `1px solid ${T.border}`,
+            color: T.sub, fontSize: "12px", fontWeight: 600,
+            fontFamily: "'Manrope', sans-serif", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: "5px",
+          }}>
+            FULL VIEW
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+        </div>
       </div>
 
-      {/* Schedule */}
-      <SectionLabel>Today's Schedule</SectionLabel>
+      {/* Daily Schedule */}
+      <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "12px" }}>Daily Schedule</h2>
       {todayItems.length === 0
         ? <div style={{ ...glass({ padding: "20px", textAlign: "center", borderRadius: "14px", marginBottom: "24px" }) }}>
-            <p style={{ color: T.muted, fontSize: "13px", fontFamily: "'Manrope', sans-serif" }}>No events today.</p>
+            <p style={{ color: T.muted, fontSize: "13px", fontFamily: "'Manrope', sans-serif" }}>No events today — enjoy your day! ✨</p>
           </div>
         : <div style={{ marginBottom: "24px" }}>
-            {todayItems.map(item => {
-              const cat  = CATS[item.category] || CATS.other;
-              const asgn = item.assignedTo ? family.find(f => f.id === item.assignedTo) : null;
-              return (
-                <div key={item.id} className="fu" style={{
-                  display: "flex", alignItems: "center", gap: "12px",
-                  padding: "12px 14px", marginBottom: "8px",
-                  ...glass({ borderRadius: "12px", borderLeft: `2px solid ${cat.c}` }),
-                }}>
-                  <div style={{ fontSize: "20px" }}>{cat.i}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{item.title}</div>
-                    <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>{cat.l}{asgn ? ` · ${asgn.name}` : ""}{item.expense ? ` · ${item.expense}` : ""}</div>
-                  </div>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: cat.c, flexShrink: 0 }} />
-                </div>
-              );
-            })}
+            {todayItems.map(item => <ScheduleRow key={item.id} item={item} />)}
           </div>
       }
 
       {/* Upcoming this week */}
-      {upcoming.length > 0 && (
+      {upcoming.length > 0 && dayTab === "week" && (
         <div style={{ marginBottom: "24px" }}>
-          <SectionLabel>Coming This Week</SectionLabel>
-          {upcoming.slice(0, 5).map(item => {
-            const cat  = CATS[item.category] || CATS.other;
-            const days = dU(item.date);
-            return (
-              <div key={item.id} className="fu" style={{
-                display: "flex", alignItems: "center", gap: "12px",
-                padding: "12px 14px", marginBottom: "8px",
-                ...glass({ borderRadius: "12px" }),
-              }}>
-                <div style={{ fontSize: "20px" }}>{cat.i}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{item.title}</div>
-                  <div style={{ fontSize: "11px", color: T.muted, fontFamily: "'Manrope', sans-serif" }}>{cat.l}</div>
-                </div>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: days <= 1 ? T.pink : "#F59E0B", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                  {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days}d`}
-                </div>
-              </div>
-            );
-          })}
+          <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "12px" }}>Coming This Week</h2>
+          {upcoming.slice(0,5).map(item => <ScheduleRow key={item.id} item={item} />)}
         </div>
       )}
 
       {/* Top Focus pills */}
       {topFocus.length > 0 && (
         <div>
-          <SectionLabel>Top Focus</SectionLabel>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: "10px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "12px" }}>Top Focus</h2>
           <div style={{ display: "flex", gap: "10px" }}>
             {topFocus.map((item, idx) => {
-              const cat  = CATS[item.category] || CATS.other;
+              const bg = idx === 0 ? T.gradient : "linear-gradient(135deg,rgba(111,66,193,0.6) 0%,rgba(75,45,140,0.6) 100%)";
               const days = dU(item.date);
-              const bg   = idx === 0 ? T.gradient : "linear-gradient(135deg,#6F42C1 0%,#4B2D8C 100%)";
               return (
                 <div key={item.id} style={{
-                  flex: 1, padding: "16px", borderRadius: "18px",
+                  flex: 1, padding: "16px 18px", borderRadius: "22px",
                   background: bg, position: "relative", overflow: "hidden",
+                  border: idx === 0 ? "none" : `1px solid rgba(180,120,255,0.25)`,
                 }}>
-                  <div style={{ position: "absolute", top: "-8px", right: "-8px", fontSize: "52px", opacity: 0.15 }}>{cat.i}</div>
-                  <div style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Manrope', sans-serif", marginBottom: "6px" }}>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#fff", fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.3 }}>{item.title}</div>
+                  <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", marginTop: "4px", fontFamily: "'Manrope', sans-serif" }}>
                     {days < 0 ? "Overdue" : days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days`}
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.3 }}>{item.title}</div>
-                  <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.55)", fontFamily: "'Manrope', sans-serif", marginTop: "4px" }}>{cat.l}</div>
                 </div>
               );
             })}
@@ -1352,11 +1400,25 @@ export default function App() {
   };
 
   const NAV = [
-    { id: "home",     icon: "🏠", label: "Home"     },
-    { id: "vault",    icon: "🗄️",  label: "Vault"    },
-    { id: "calendar", icon: "📅", label: "Calendar" },
-    { id: "tasks",    icon: "✓",  label: "Tasks"    },
+    { id: "home",     icon: "home",    label: "Home"            },
+    { id: "vault",    icon: "vault",   label: "Household Vault" },
+    { id: "calendar", icon: "cal",    label: "Calendar"        },
+    { id: "tasks",    icon: "tasks",   label: "Task List"       },
   ];
+
+  // SVG nav icons
+  const NavIcon = ({ type, active }) => {
+    const c = active ? T.pink : "rgba(255,255,255,0.38)";
+    if (type === "home")  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><path d="M9 21V12h6v9" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/></svg>;
+    if (type === "vault") return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke={c} strokeWidth="1.8"/><circle cx="12" cy="12" r="3" stroke={c} strokeWidth="1.8"/><path d="M12 9V7M12 17v-2M15 12h2M7 12h2" stroke={c} strokeWidth="1.6" strokeLinecap="round"/></svg>;
+    if (type === "cal")   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke={c} strokeWidth="1.8"/><path d="M3 10h18M8 3v4M16 3v4" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>;
+    if (type === "tasks") return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>;
+    return null;
+  };
+
+  // Family avatar initials (top header)
+  const headerFamily = family.slice(0, 3);
+
 
   return (
     <div className="app-container" style={{
@@ -1366,9 +1428,89 @@ export default function App() {
       position: "relative",
     }}>
 
-      {/* Atmospheric background glows */}
-      <div style={{ position: "fixed", top: "5%", left: "-25%", width: "70vw", height: "70vw", background: "radial-gradient(circle,rgba(214,51,132,0.07) 0%,transparent 68%)", pointerEvents: "none", zIndex: 0 }} />
-      <div style={{ position: "fixed", top: "45%", right: "-25%", width: "60vw", height: "60vw", background: "radial-gradient(circle,rgba(111,66,193,0.07) 0%,transparent 68%)", pointerEvents: "none", zIndex: 0 }} />
+      {/* Atmospheric background — blurred room photo simulation */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        background: "linear-gradient(160deg, #2d1057 0%, #1a0838 30%, #0f0520 60%, #08021a 100%)",
+      }} />
+      {/* Ambient glows */}
+      <div style={{ position: "fixed", top: "-10%", left: "-10%", width: "80vw", height: "80vw", background: "radial-gradient(circle,rgba(111,66,193,0.22) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", top: "10%", right: "-15%", width: "60vw", height: "60vw", background: "radial-gradient(circle,rgba(214,51,132,0.10) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+      {/* Room photo strip at top */}
+      <div style={{
+        position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
+        width: "100%", maxWidth: "600px", height: "220px", zIndex: 0, pointerEvents: "none",
+        overflow: "hidden",
+      }}>
+        <div style={{
+          width: "100%", height: "100%",
+          background: "linear-gradient(135deg,#3d1a6e 0%,#2a0d52 40%,#1d0a3a 100%)",
+          opacity: 0.7,
+        }} />
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(15,5,32,0) 30%, rgba(15,5,32,1) 100%)",
+        }} />
+      </div>
+
+      {/* Global top bar: family avatars left, bell right */}
+      <div style={{
+        position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
+        width: "100%", maxWidth: "600px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 18px", zIndex: 120,
+      }}>
+        {/* Avatar cluster */}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {headerFamily.length === 0 ? (
+            <div style={{ display: "flex", gap: "6px" }}>
+              {[T.pink, T.purple, T.teal].map((c, i) => (
+                <div key={i} style={{
+                  width: "36px", height: "36px", borderRadius: "50%",
+                  background: c, border: "2.5px solid rgba(255,255,255,0.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "14px", fontWeight: 700, color: "#fff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  marginLeft: i > 0 ? "-8px" : 0, zIndex: 3 - i,
+                }}>👤</div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex" }}>
+              {headerFamily.map((m, i) => {
+                const colors = [T.pink, T.purple, T.teal];
+                return (
+                  <div key={m.id} style={{
+                    width: "36px", height: "36px", borderRadius: "50%",
+                    background: colors[i % colors.length],
+                    border: "2.5px solid rgba(255,255,255,0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "13px", fontWeight: 700, color: "#fff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    marginLeft: i > 0 ? "-8px" : 0, zIndex: 3 - i,
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}>{m.name.charAt(0).toUpperCase()}</div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {/* Bell + settings */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button onClick={() => setModal("settings")} style={{
+            width: "36px", height: "36px", borderRadius: "50%",
+            background: "rgba(80,30,120,0.4)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            border: `1px solid ${T.border}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer",
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
 
       {/* Screen content */}
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -1378,21 +1520,22 @@ export default function App() {
         {view === "tasks"    && <TasksScreen    items={items} family={family} currentUser={currentUser} />}
       </div>
 
-      {/* FAB — Add */}
+      {/* FAB — Add (pink gradient, bottom right) */}
       <button onClick={() => setModal("add")} style={{
-        position: "fixed", bottom: "90px", right: "24px",
+        position: "fixed", bottom: "92px", right: "18px",
         width: "56px", height: "56px", borderRadius: "50%",
         background: T.gradient, color: "#fff", border: "none",
-        fontSize: "28px", cursor: "pointer",
-        boxShadow: "0 6px 28px rgba(214,51,132,0.5)",
+        fontSize: "30px", cursor: "pointer",
+        boxShadow: "0 6px 28px rgba(214,51,132,0.55)",
         display: "flex", alignItems: "center", justifyContent: "center",
         zIndex: 200, fontWeight: 300, lineHeight: 1,
+        transition: "transform 0.15s",
       }}>+</button>
 
       {/* FAB — AI */}
       <button onClick={() => setShowAI(!showAI)} style={{
-        position: "fixed", bottom: "90px", left: "24px",
-        width: "50px", height: "50px", borderRadius: "50%",
+        position: "fixed", bottom: "92px", left: "18px",
+        width: "46px", height: "46px", borderRadius: "50%",
         background: showAI ? "rgba(211,47,47,0.85)" : "linear-gradient(135deg,#6F42C1,#4B2D8C)",
         color: "#fff", border: "none", fontSize: "20px", cursor: "pointer",
         boxShadow: "0 4px 20px rgba(111,66,193,0.45)",
@@ -1411,33 +1554,23 @@ export default function App() {
         {NAV.map(tab => (
           <button key={tab.id} onClick={() => setView(tab.id)} style={{
             flex: 1, display: "flex", flexDirection: "column",
-            alignItems: "center", gap: "3px",
+            alignItems: "center", gap: "4px",
             background: "none", border: "none", cursor: "pointer",
-            color: view === tab.id ? T.pink : "rgba(255,255,255,0.3)",
             padding: "0", transition: "color 0.2s",
           }}>
-            <span style={{ fontSize: "22px", lineHeight: 1 }}>{tab.icon}</span>
-            <span style={{ fontSize: "9px", fontFamily: "'Manrope', sans-serif", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>{tab.label}</span>
-            <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: view === tab.id ? T.pink : "transparent", marginTop: "1px", transition: "background 0.2s" }} />
+            <NavIcon type={tab.icon} active={view === tab.id} />
+            <span style={{
+              fontSize: "9px", fontFamily: "'Manrope', sans-serif",
+              fontWeight: 700, letterSpacing: "0.04em",
+              color: view === tab.id ? T.pink : "rgba(255,255,255,0.38)",
+              whiteSpace: "nowrap",
+            }}>
+              {tab.id === "vault" ? "Household Vault" : tab.label}
+            </span>
+            <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: view === tab.id ? T.pink : "transparent", transition: "background 0.2s" }} />
           </button>
         ))}
       </nav>
-
-      {/* Header action buttons (scan, contacts, settings) */}
-      <div style={{ position: "fixed", top: "16px", right: "16px", display: "flex", gap: "8px", zIndex: 100 }}>
-        {[
-          { m: "scan",     i: "📷" },
-          { m: "contact",  i: "👥" },
-          { m: "settings", i: "⚙️" },
-        ].map(b => (
-          <button key={b.m} onClick={() => setModal(b.m)} style={{
-            width: "36px", height: "36px", borderRadius: "10px",
-            ...glass({}), border: `1px solid ${T.border}`,
-            color: T.text, fontSize: "16px", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>{b.i}</button>
-        ))}
-      </div>
 
       {/* AI panel */}
       {showAI && <AIAssistant items={items} contacts={contacts} family={family} onClose={() => setShowAI(false)} />}
