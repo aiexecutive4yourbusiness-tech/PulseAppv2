@@ -42,38 +42,44 @@ const dU = ds => {
 const ld = (k, d) => { try { const v = localStorage.getItem("pulse5_" + k); return v ? JSON.parse(v) : d; } catch { return d; } };
 const sv = (k, v) => { try { localStorage.setItem("pulse5_" + k, JSON.stringify(v)); } catch {} };
 
-// ─── Sample seed data (shown on first launch) ──────────────────────
+// ─── Sample data — always merged in, never saved to DB ─────────────
+// Items carry _sample:true so the save effect can strip them out.
+// getSampleItems(fam) maps assignedTo to the REAL family members so
+// avatars render correctly regardless of who's logged in.
 const SAMPLE_FAMILY = [
   { id: 9001, name: "Alex" },
   { id: 9002, name: "Jordan" },
   { id: 9003, name: "Sam" },
 ];
 
-function getSampleItems() {
-  const d = n => { const dt = new Date(today); dt.setDate(dt.getDate() + n); return toISO(dt); };
+function getSampleItems(fam = SAMPLE_FAMILY) {
+  const d  = n => { const dt = new Date(today); dt.setDate(dt.getDate() + n); return toISO(dt); };
+  const f  = [...fam, ...SAMPLE_FAMILY].slice(0, 3); // at least 3 members
+  const [f0, f1, f2] = [f[0].id, f[1].id, f[2].id];
+  const s  = true; // _sample flag shorthand
   return [
-    // ── 10 Activities ────────────────────────────────────────────
-    { id: 1001, title: "Morning Briefing",       category: "home",      date: d(0), time: "06:00", timeEnd: "08:45", notes: "Reviewing quarterly targets",  assignedTo: 9001, taskStatus: "todo" },
-    { id: 1002, title: "Client Call",            category: "contracts", date: d(0), time: "09:30", timeEnd: "10:30", notes: "",                             assignedTo: 9001, taskStatus: "todo" },
-    { id: 1003, title: "Project Sync",           category: "home",      date: d(0), time: "11:00", timeEnd: "12:00", notes: "",                             assignedTo: 9002, taskStatus: "todo" },
-    { id: 1004, title: "Private Lunch",          category: "other",     date: d(0), time: "12:30", timeEnd: "13:30", notes: "The Grand Fork, SoHo",         assignedTo: 9001, taskStatus: "todo" },
-    { id: 1005, title: "Team Review",            category: "home",      date: d(0), time: "14:00", timeEnd: "15:00", notes: "",                             assignedTo: 9002, taskStatus: "todo" },
-    { id: 1006, title: "Family Dinner Prep",     category: "home",      date: d(0), time: "16:00", timeEnd: "17:00", notes: "",                             assignedTo: 9003, taskStatus: "todo" },
-    { id: 1007, title: "Team Meeting",           category: "home",      date: d(1), time: "10:00", timeEnd: "11:00", notes: "Sprint planning",               assignedTo: 9002, taskStatus: "todo" },
-    { id: 1008, title: "Gym Session",            category: "other",     date: d(2), time: "07:30", timeEnd: "09:00", notes: "",                             assignedTo: 9001, taskStatus: "todo" },
-    { id: 1009, title: "Piano Lesson (Ella)",    category: "kids",      date: d(3), time: "14:00", timeEnd: "15:00", notes: "",                             assignedTo: 9003, taskStatus: "todo" },
-    { id: 1010, title: "Doctor Appointment",     category: "medical",   date: d(5), time: "16:00", timeEnd: "17:00", notes: "Annual check-up",               assignedTo: 9002, taskStatus: "todo" },
-    // ── 10 Tasks (distributed across kanban columns) ─────────────
-    { id: 2001, title: "Grocery Shopping",       category: "finances",      date: d(1),  assignedTo: 9001, taskStatus: "todo"     },
-    { id: 2002, title: "Pay Bills",              category: "finances",      date: d(2),  assignedTo: 9002, taskStatus: "todo"     },
-    { id: 2003, title: "Call Plumber",           category: "home",          date: d(3),  assignedTo: 9001, taskStatus: "todo"     },
-    { id: 2004, title: "Buy Gift — Maya",        category: "birthdays",     date: d(4),  assignedTo: 9003, taskStatus: "todo"     },
-    { id: 2005, title: "Car Service Booking",    category: "vehicle",       date: d(6),  assignedTo: 9001, taskStatus: "todo"     },
-    { id: 2006, title: "Vacation Plans",         category: "other",         date: d(14), assignedTo: 9001, taskStatus: "discuss"  },
-    { id: 2007, title: "School Event Budget",    category: "kids",          date: d(10), assignedTo: 9002, taskStatus: "discuss"  },
-    { id: 2008, title: "Kitchen Renovation",     category: "home",          date: d(21), assignedTo: 9003, taskStatus: "discuss"  },
-    { id: 2009, title: "Garden Cleanup",         category: "home",          date: d(5),  assignedTo: 9003, taskStatus: "assigned" },
-    { id: 2010, title: "Pet Grooming Appt",      category: "other",         date: d(7),  assignedTo: 9002, taskStatus: "assigned" },
+    // ── 10 Activities (fill today's schedule + next 5 days on calendar)
+    { id:1001,_sample:s, title:"Morning Briefing",    category:"home",      date:d(0), time:"06:00",timeEnd:"08:45", notes:"Reviewing quarterly targets", assignedTo:f0, taskStatus:"todo" },
+    { id:1002,_sample:s, title:"Client Call",         category:"contracts", date:d(0), time:"09:30",timeEnd:"10:30", notes:"",                            assignedTo:f0, taskStatus:"todo" },
+    { id:1003,_sample:s, title:"Project Sync",        category:"home",      date:d(0), time:"11:00",timeEnd:"12:00", notes:"",                            assignedTo:f1, taskStatus:"todo" },
+    { id:1004,_sample:s, title:"Private Lunch",       category:"other",     date:d(0), time:"12:30",timeEnd:"13:30", notes:"The Grand Fork, SoHo",        assignedTo:f0, taskStatus:"todo" },
+    { id:1005,_sample:s, title:"Team Review",         category:"home",      date:d(0), time:"14:00",timeEnd:"15:00", notes:"",                            assignedTo:f1, taskStatus:"todo" },
+    { id:1006,_sample:s, title:"Family Dinner Prep",  category:"home",      date:d(0), time:"16:00",timeEnd:"17:00", notes:"",                            assignedTo:f2, taskStatus:"todo" },
+    { id:1007,_sample:s, title:"Team Meeting",        category:"home",      date:d(1), time:"10:00",timeEnd:"11:00", notes:"Sprint planning",              assignedTo:f1, taskStatus:"todo" },
+    { id:1008,_sample:s, title:"Gym Session",         category:"other",     date:d(2), time:"07:30",timeEnd:"09:00", notes:"",                            assignedTo:f0, taskStatus:"todo" },
+    { id:1009,_sample:s, title:"Piano Lesson (Ella)", category:"kids",      date:d(3), time:"14:00",timeEnd:"15:00", notes:"",                            assignedTo:f2, taskStatus:"todo" },
+    { id:1010,_sample:s, title:"Doctor Appointment",  category:"medical",   date:d(5), time:"16:00",timeEnd:"17:00", notes:"Annual check-up",              assignedTo:f1, taskStatus:"todo" },
+    // ── 10 Tasks (To Do / To Discuss / Assigned columns)
+    { id:2001,_sample:s, title:"Grocery Shopping",    category:"finances",  date:d(1),  assignedTo:f0, taskStatus:"todo"     },
+    { id:2002,_sample:s, title:"Pay Bills",           category:"finances",  date:d(2),  assignedTo:f1, taskStatus:"todo"     },
+    { id:2003,_sample:s, title:"Call Plumber",        category:"home",      date:d(3),  assignedTo:f0, taskStatus:"todo"     },
+    { id:2004,_sample:s, title:"Buy Gift — Maya",     category:"birthdays", date:d(4),  assignedTo:f2, taskStatus:"todo"     },
+    { id:2005,_sample:s, title:"Car Service Booking", category:"vehicle",   date:d(6),  assignedTo:f0, taskStatus:"todo"     },
+    { id:2006,_sample:s, title:"Vacation Plans",      category:"other",     date:d(14), assignedTo:f0, taskStatus:"discuss"  },
+    { id:2007,_sample:s, title:"School Event Budget", category:"kids",      date:d(10), assignedTo:f1, taskStatus:"discuss"  },
+    { id:2008,_sample:s, title:"Kitchen Renovation",  category:"home",      date:d(21), assignedTo:f2, taskStatus:"discuss"  },
+    { id:2009,_sample:s, title:"Garden Cleanup",      category:"home",      date:d(5),  assignedTo:f2, taskStatus:"assigned" },
+    { id:2010,_sample:s, title:"Pet Grooming Appt",   category:"other",     date:d(7),  assignedTo:f1, taskStatus:"assigned" },
   ];
 }
 
@@ -1396,22 +1402,31 @@ function TasksScreen({ items, family, currentUser }) {
 /* ═══════════════════════════════════════════════════════════════════
    MAIN APP
    ═══════════════════════════════════════════════════════════════════ */
+// Merge helper: sample items (flagged _sample:true) + real items.
+// Real items always win. Sample items are NEVER written to DB/localStorage.
+const mergeSamples = (realItems, fam) => {
+  const realIds = new Set(realItems.map(i => i.id));
+  return [...getSampleItems(fam).filter(s => !realIds.has(s.id)), ...realItems];
+};
+
 export default function App() {
-  const [items,       setItems]   = useState(() => { const s = ld("items",  []); return s.length > 0 ? s : getSampleItems(); });
-  const [contacts,    setCts]     = useState(() => ld("contacts", []));
   const [family,      setFamRaw]  = useState(() => { const s = ld("family", []); return s.length > 0 ? s : SAMPLE_FAMILY; });
+  const [items,       setItems]   = useState(() => mergeSamples(ld("items", []).filter(i => !i._sample), ld("family", []).length > 0 ? ld("family", []) : SAMPLE_FAMILY));
+  const [contacts,    setCts]     = useState(() => ld("contacts", []));
   const [currentUser, setCURaw]   = useState(() => ld("currentUser", ""));
   const [syncSt,      setSyncSt]  = useState(null);
   const dbReady = useRef(false);
 
   useEffect(() => {
     Promise.all([dbLoad("items", []), dbLoad("contacts", []), dbLoad("family", [])]).then(([it, ct, fm]) => {
-      if (it.length  > 0) setItems(it);
+      const finalFam = fm.length > 0 ? fm : SAMPLE_FAMILY;
+      if (fm.length > 0) setFamRaw(fm);
+      // Always merge samples with real data so demo content is visible
+      setItems(mergeSamples(it.filter(i => !i._sample), finalFam));
       setCts(ct);
-      if (fm.length  > 0) setFamRaw(fm);
       setTimeout(() => { dbReady.current = true; }, 100);
     });
-    const s1 = subscribeToKey("items",    v => { setItems(v);  sv("items", v); });
+    const s1 = subscribeToKey("items",    v => { const real = v.filter(i => !i._sample); setItems(p => mergeSamples(real, family)); sv("items", real); });
     const s2 = subscribeToKey("contacts", v => { setCts(v);    sv("contacts", v); });
     const s3 = subscribeToKey("family",   v => { setFamRaw(v); sv("family", v); });
     return () => { s1.unsubscribe(); s2.unsubscribe(); s3.unsubscribe(); };
@@ -1424,7 +1439,8 @@ export default function App() {
   const setFam = v => { const nv = typeof v === "function" ? v(family) : v; setFamRaw(nv); sv("family", nv); if (dbReady.current) dbSave("family", nv); };
   const setCU  = v => { setCURaw(v); sv("currentUser", v); };
 
-  useEffect(() => { sv("items",    items);    if (dbReady.current) dbSave("items",    items);    }, [items]);
+  // Save only real (non-sample) items — samples are never persisted
+  useEffect(() => { const real = items.filter(i => !i._sample); sv("items", real); if (dbReady.current) dbSave("items", real); }, [items]);
   useEffect(() => { sv("contacts", contacts); if (dbReady.current) dbSave("contacts", contacts); }, [contacts]);
 
   const addItem = useCallback(i => setItems(p => [...p, { ...i, id: Date.now() + Math.random(), taskStatus: i.taskStatus || "todo" }]), []);
